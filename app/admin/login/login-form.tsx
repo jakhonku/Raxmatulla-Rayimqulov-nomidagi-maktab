@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Lock, LogIn, AlertCircle } from "lucide-react";
+import { LogIn, AlertCircle } from "lucide-react";
 import { loginAction } from "@/app/admin/actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,21 @@ export function LoginForm() {
       <input type="hidden" name="from" value={from} />
 
       <div className="flex flex-col gap-1.5">
+        <label htmlFor="username" className="text-sm font-semibold text-slate-700">
+          Login
+        </label>
+        <Input
+          id="username"
+          name="username"
+          type="text"
+          placeholder="Login (foydalanuvchi nomi)"
+          autoComplete="username"
+          autoFocus
+          required
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
         <label htmlFor="password" className="text-sm font-semibold text-slate-700">
           Parol
         </label>
@@ -25,7 +40,7 @@ export function LoginForm() {
           name="password"
           type="password"
           placeholder="Admin parolini kiriting"
-          autoFocus
+          autoComplete="current-password"
           required
         />
       </div>

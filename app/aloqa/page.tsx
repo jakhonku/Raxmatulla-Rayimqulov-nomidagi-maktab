@@ -9,7 +9,7 @@ import { ContactForm } from "@/components/forms/contact-form";
 export const metadata: Metadata = {
   title: "Aloqa",
   description:
-    "Raxmatulla Rayimqulov nomidagi maktab bilan bog'laning. Manzil, telefon, email va murojaat shakli.",
+    "Rahmetolla Rayimqulov nomidagi maktab bilan bog'laning. Manzil, telefon, email va murojaat shakli.",
 };
 
 const contactCards = [

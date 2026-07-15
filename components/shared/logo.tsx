@@ -7,6 +7,7 @@ interface LogoProps {
   variant?: "light" | "dark";
   subtitle?: string;
   title?: string;
+  hideText?: boolean;
 }
 
 /**
@@ -17,6 +18,7 @@ export function Logo({
   variant = "dark",
   title = "R. Rayimqulov maktabi",
   subtitle = "Umumiy o'rta ta'lim maktabi",
+  hideText = false,
 }: LogoProps) {
   const isLight = variant === "light";
   return (
@@ -25,24 +27,26 @@ export function Logo({
         <GraduationCap className="h-6 w-6" />
         <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-gold" />
       </span>
-      <span className="flex flex-col leading-tight">
-        <span
-          className={cn(
-            "font-heading text-[15px] font-extrabold tracking-tight",
-            isLight ? "text-white" : "text-slate-900",
-          )}
-        >
-          {title}
+      {!hideText && (
+        <span className="flex flex-col leading-tight">
+          <span
+            className={cn(
+              "font-heading text-[15px] font-extrabold tracking-tight",
+              isLight ? "text-white" : "text-slate-900",
+            )}
+          >
+            {title}
+          </span>
+          <span
+            className={cn(
+              "text-[11px] font-medium",
+              isLight ? "text-white/70" : "text-slate-500",
+            )}
+          >
+            {subtitle}
+          </span>
         </span>
-        <span
-          className={cn(
-            "text-[11px] font-medium",
-            isLight ? "text-white/70" : "text-slate-500",
-          )}
-        >
-          {subtitle}
-        </span>
-      </span>
+      )}
     </Link>
   );
 }

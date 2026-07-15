@@ -1,6 +1,5 @@
 "use server";
 
-import { promises as fs } from "fs";
 import path from "path";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -11,8 +10,10 @@ import {
   SESSION_MAX_AGE,
   createSessionToken,
   getAdminPassword,
+  getAdminUsername,
 } from "@/lib/auth";
 import { assertAdmin } from "@/lib/admin-session";
+import { getSupabase, UPLOADS_BUCKET } from "@/lib/supabase";
 import {
   createNews,
   updateNews,
@@ -28,11 +29,12 @@ import type { NewsCategory } from "@/lib/data";
 /* --------------------------------- Auth --------------------------------- */
 
 export async function loginAction(_prev: unknown, formData: FormData) {
+  const username = String(formData.get("username") || "").trim();
   const password = String(formData.get("password") || "");
   const from = String(formData.get("from") || "/admin");
 
-  if (password !== getAdminPassword()) {
-    return { error: "Parol noto'g'ri. Qaytadan urinib ko'ring." };
+  if (username !== getAdminUsername() || password !== getAdminPassword()) {
+    return { error: "Login yoki parol noto'g'ri. Qaytadan urinib ko'ring." };
   }
 
   const token = await createSessionToken();
@@ -61,10 +63,20 @@ async function saveUpload(file: File): Promise<string> {
   const ext = path.extname(file.name).toLowerCase();
   const base = slugify(path.basename(file.name, ext)) || "fayl";
   const name = `${Date.now()}-${base}${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads");
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(path.join(dir, name), bytes);
-  return `/uploads/${name}`;
+
+  const supabase = getSupabase();
+  const { error } = await supabase.storage
+    .from(UPLOADS_BUCKET)
+    .upload(name, bytes, {
+      contentType: file.type || "application/octet-stream",
+      upsert: false,
+    });
+  if (error) {
+    throw new Error(`Faylni yuklashda xatolik: ${error.message}`);
+  }
+
+  const { data } = supabase.storage.from(UPLOADS_BUCKET).getPublicUrl(name);
+  return data.publicUrl;
 }
 
 /* ------------------------------- Yangiliklar ------------------------------- */

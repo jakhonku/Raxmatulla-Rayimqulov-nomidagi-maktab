@@ -46,9 +46,9 @@ export interface Stat {
 }
 
 export const stats: Stat[] = [
-  { value: 1240, label: "O'quvchilar" },
-  { value: 86, label: "O'qituvchilar" },
-  { value: 4200, suffix: "+", label: "Bitiruvchilar" },
+  { value: 500, label: "O'quvchilar" },
+  { value: 35, label: "O'qituvchilar" },
+  { value: 2500, suffix: "+", label: "Bitiruvchilar" },
   { value: 150, suffix: "+", label: "Yutuq va mukofotlar" },
 ];
 

@@ -5,7 +5,7 @@ import { TeachersGrid } from "@/components/teachers/teachers-grid";
 export const metadata: Metadata = {
   title: "O'qituvchilar",
   description:
-    "Raxmatulla Rayimqulov nomidagi maktabning malakali va tajribali o'qituvchilar jamoasi.",
+    "Rahmetolla Rayimqulov nomidagi maktabning malakali va tajribali o'qituvchilar jamoasi.",
 };
 
 export default function TeachersPage() {

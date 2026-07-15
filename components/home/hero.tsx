@@ -37,7 +37,7 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.05 }}
             className="font-heading text-4xl font-extrabold leading-[1.1] tracking-tight text-slate-900 text-balance sm:text-5xl lg:text-6xl"
           >
-            Raxmatulla Rayimqulov nomidagi{" "}
+            Rahmetolla Rayimqulov nomidagi{" "}
             <span className="bg-gradient-to-r from-primary-600 to-emerald-600 bg-clip-text text-transparent">
               maktab
             </span>
@@ -104,7 +104,7 @@ export function Hero() {
               <GraduationCap className="h-6 w-6" />
             </span>
             <div>
-              <p className="font-heading text-2xl font-bold text-slate-900">1240+</p>
+              <p className="font-heading text-2xl font-bold text-slate-900">500+</p>
               <p className="text-xs font-medium text-slate-500">O'quvchilar</p>
             </div>
           </motion.div>

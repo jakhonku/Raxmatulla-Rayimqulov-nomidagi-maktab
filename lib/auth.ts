@@ -9,14 +9,33 @@ export const SESSION_COOKIE = "admin_session";
 const SESSION_DAYS = 7;
 
 function getSecret(): string {
-  return (
-    process.env.ADMIN_SESSION_SECRET ||
-    "raimqulov-maktabi-dev-secret-almashtiring"
-  );
+  const secret = process.env.ADMIN_SESSION_SECRET;
+  if (!secret) {
+    throw new Error(
+      "ADMIN_SESSION_SECRET o'rnatilmagan. .env.local (yoki Vercel env) ga qo'shing.",
+    );
+  }
+  return secret;
+}
+
+export function getAdminUsername(): string {
+  const username = process.env.ADMIN_USERNAME;
+  if (!username) {
+    throw new Error(
+      "ADMIN_USERNAME o'rnatilmagan. .env.local (yoki Vercel env) ga qo'shing.",
+    );
+  }
+  return username;
 }
 
 export function getAdminPassword(): string {
-  return process.env.ADMIN_PASSWORD || "admin123";
+  const password = process.env.ADMIN_PASSWORD;
+  if (!password) {
+    throw new Error(
+      "ADMIN_PASSWORD o'rnatilmagan. .env.local (yoki Vercel env) ga qo'shing.",
+    );
+  }
+  return password;
 }
 
 async function hmac(message: string): Promise<string> {

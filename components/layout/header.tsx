@@ -66,7 +66,7 @@ export function Header() {
         )}
       >
         <div className="container flex h-16 items-center justify-between gap-4 lg:h-18">
-          <Logo />
+          <Logo hideText />
 
           {/* Desktop navigatsiya */}
           <nav className="hidden items-center gap-1 xl:flex">
@@ -130,7 +130,7 @@ export function Header() {
               className="fixed inset-y-0 right-0 z-50 flex w-[85%] max-w-sm flex-col bg-white shadow-2xl xl:hidden"
             >
               <div className="flex items-center justify-between border-b border-slate-100 p-5">
-                <Logo />
+                <Logo hideText />
                 <button
                   type="button"
                   onClick={() => setMobileOpen(false)}

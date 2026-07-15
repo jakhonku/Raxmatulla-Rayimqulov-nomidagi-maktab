@@ -20,7 +20,7 @@ import { Card } from "@/components/ui/card";
 export const metadata: Metadata = {
   title: "Maktab haqida",
   description:
-    "Raxmatulla Rayimqulov nomidagi maktab tarixi, missiyasi, infratuzilmasi va rahbariyati haqida ma'lumot.",
+    "Rahmetolla Rayimqulov nomidagi maktab tarixi, missiyasi, infratuzilmasi va rahbariyati haqida ma'lumot.",
 };
 
 const missionCards = [
@@ -100,16 +100,16 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Raxmatulla Rayimqulov haqida */}
+      {/* Rahmetolla Rayimqulov haqida */}
       <section className="bg-primary-900 py-16 text-white lg:py-20">
         <div className="container">
           <div className="grid items-center gap-10 lg:grid-cols-[320px_1fr] lg:gap-16">
             <Reveal className="mx-auto w-full max-w-[300px]">
               <div className="relative aspect-[3/4] overflow-hidden rounded-3xl ring-4 ring-white/10">
-                {/* Raxmatulla Rayimqulov surati */}
+                {/* Rahmetolla Rayimqulov surati */}
                 <Image
                   src="/images/raimqulov.png"
-                  alt="Raxmatulla Rayimqulov"
+                  alt="Rahmetolla Rayimqulov"
                   fill
                   sizes="300px"
                   className="object-cover object-top"
@@ -126,14 +126,14 @@ export default function AboutPage() {
               </Reveal>
               <Reveal delay={0.05}>
                 <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-                  Raxmatulla Rayimqulov
+                  Rahmetolla Rayimqulov
                 </h2>
               </Reveal>
               <Reveal delay={0.1}>
                 <div className="space-y-4 text-base leading-relaxed text-slate-200">
                   <p>
                     Maktabimiz xalqimizning munosib farzandi, ta'lim va ma'rifat
-                    fidoyisi Raxmatulla Rayimqulov nomi bilan faxrlanadi. U butun umrini
+                    fidoyisi Rahmetolla Rayimqulov nomi bilan faxrlanadi. U butun umrini
                     yosh avlod ta'lim-tarbiyasiga bag'ishlagan ulug' inson edi.
                   </p>
                   <p>

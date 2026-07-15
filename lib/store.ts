@@ -1,83 +1,65 @@
 import "server-only";
-import { promises as fs } from "fs";
-import path from "path";
-import {
-  news as seedNews,
-  type NewsItem,
-  type NewsCategory,
-} from "@/lib/data";
+import { getSupabase } from "@/lib/supabase";
+import type { NewsItem, NewsCategory } from "@/lib/data";
 
 /**
- * Oddiy JSON fayl asosidagi ma'lumotlar ombori.
- * (Simple JSON file-based data store.)
+ * Supabase (Postgres) asosidagi ma'lumotlar ombori.
+ * (Supabase/Postgres-backed data store.)
  *
- * MUHIM: Vercel serverless muhitida fayl tizimi faqat o'qish uchun.
- * Bu ombor lokal ishlash va oddiy Node/VPS serverda ishlaydi.
- * Vercel production uchun keyinroq ma'lumotlar bazasiga (Postgres + Blob)
- * o'tkazish kerak bo'ladi.
+ * Jadvallar: news, messages, schedules. Fayllar Supabase Storage'da.
+ * SQL sxema va sozlash: supabase/schema.sql fayliga qarang.
  */
-
-const DATA_DIR = path.join(process.cwd(), "data");
-const NEWS_FILE = path.join(DATA_DIR, "news.json");
-const MESSAGES_FILE = path.join(DATA_DIR, "messages.json");
-const SCHEDULES_FILE = path.join(DATA_DIR, "schedules.json");
-
-async function ensureDir() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-}
-
-async function readJson<T>(file: string, fallback: T): Promise<T> {
-  try {
-    const raw = await fs.readFile(file, "utf-8");
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-async function writeJson(file: string, data: unknown) {
-  await ensureDir();
-  await fs.writeFile(file, JSON.stringify(data, null, 2), "utf-8");
-}
 
 /* ------------------------------- Yangiliklar ------------------------------- */
 
 export type AdminNews = NewsItem & { id: string; createdAt: string };
 
-let newsSeeded = false;
+interface NewsRow {
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string[];
+  date: string;
+  category: NewsCategory;
+  image: string;
+  author: string | null;
+  created_at: string;
+}
 
-async function ensureNewsSeed(): Promise<AdminNews[]> {
-  const existing = await readJson<AdminNews[] | null>(NEWS_FILE, null);
-  if (existing && Array.isArray(existing)) return existing;
-
-  // Birinchi ishga tushganda mavjud namuna yangiliklar bilan to'ldiramiz
-  const seeded: AdminNews[] = seedNews.map((item) => ({
-    ...item,
-    id: item.slug,
-    createdAt: new Date(item.date).toISOString(),
-  }));
-  if (!newsSeeded) {
-    newsSeeded = true;
-    // Yozib bo'lmasa ham (faqat o'qiladigan FS) — namuna ma'lumot qaytadi
-    try {
-      await writeJson(NEWS_FILE, seeded);
-    } catch {
-      /* read-only muhitda e'tiborsiz qoldiriladi */
-    }
-  }
-  return seeded;
+function mapNews(row: NewsRow): AdminNews {
+  return {
+    id: row.slug,
+    slug: row.slug,
+    title: row.title,
+    excerpt: row.excerpt,
+    content: row.content ?? [],
+    date: row.date,
+    category: row.category,
+    image: row.image,
+    author: row.author ?? undefined,
+    createdAt: row.created_at,
+  };
 }
 
 export async function getAllNews(): Promise<AdminNews[]> {
-  const items = await ensureNewsSeed();
-  return [...items].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-  );
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("news")
+    .select("*")
+    .order("date", { ascending: false });
+  if (error) throw new Error(`Yangiliklarni olishda xatolik: ${error.message}`);
+  return (data as NewsRow[]).map(mapNews);
 }
 
 export async function getNewsBySlug(slug: string): Promise<AdminNews | null> {
-  const items = await ensureNewsSeed();
-  return items.find((n) => n.slug === slug) ?? null;
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("news")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error) throw new Error(`Yangilikni olishda xatolik: ${error.message}`);
+  return data ? mapNews(data as NewsRow) : null;
 }
 
 export interface NewsInput {
@@ -91,35 +73,63 @@ export interface NewsInput {
 }
 
 export async function createNews(input: NewsInput): Promise<AdminNews> {
-  const items = await ensureNewsSeed();
-  const slug = uniqueSlug(input.title, items.map((n) => n.slug));
-  const item: AdminNews = {
-    ...input,
-    slug,
-    id: slug,
-    createdAt: new Date().toISOString(),
-  };
-  items.push(item);
-  await writeJson(NEWS_FILE, items);
-  return item;
+  const supabase = getSupabase();
+
+  const { data: existing, error: listErr } = await supabase
+    .from("news")
+    .select("slug");
+  if (listErr) throw new Error(`Slug tekshirishda xatolik: ${listErr.message}`);
+
+  const slug = uniqueSlug(
+    input.title,
+    (existing as { slug: string }[]).map((n) => n.slug),
+  );
+
+  const { data, error } = await supabase
+    .from("news")
+    .insert({
+      slug,
+      title: input.title,
+      excerpt: input.excerpt,
+      content: input.content,
+      category: input.category,
+      image: input.image,
+      author: input.author || null,
+      date: input.date,
+    })
+    .select("*")
+    .single();
+  if (error) throw new Error(`Yangilik qo'shishda xatolik: ${error.message}`);
+  return mapNews(data as NewsRow);
 }
 
 export async function updateNews(
   slug: string,
   input: NewsInput,
 ): Promise<AdminNews | null> {
-  const items = await ensureNewsSeed();
-  const idx = items.findIndex((n) => n.slug === slug);
-  if (idx === -1) return null;
-  items[idx] = { ...items[idx], ...input, slug, id: slug };
-  await writeJson(NEWS_FILE, items);
-  return items[idx];
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("news")
+    .update({
+      title: input.title,
+      excerpt: input.excerpt,
+      content: input.content,
+      category: input.category,
+      image: input.image,
+      author: input.author || null,
+      date: input.date,
+    })
+    .eq("slug", slug)
+    .select("*")
+    .maybeSingle();
+  if (error) throw new Error(`Yangilikni yangilashda xatolik: ${error.message}`);
+  return data ? mapNews(data as NewsRow) : null;
 }
 
 export async function deleteNews(slug: string): Promise<void> {
-  const items = await ensureNewsSeed();
-  const next = items.filter((n) => n.slug !== slug);
-  await writeJson(NEWS_FILE, next);
+  const supabase = getSupabase();
+  const { error } = await supabase.from("news").delete().eq("slug", slug);
+  if (error) throw new Error(`Yangilikni o'chirishda xatolik: ${error.message}`);
 }
 
 /* ------------------------------- Murojaatlar ------------------------------- */
@@ -134,48 +144,80 @@ export interface Message {
   read: boolean;
 }
 
+interface MessageRow {
+  id: string;
+  name: string;
+  phone: string;
+  email: string | null;
+  message: string;
+  read: boolean;
+  created_at: string;
+}
+
+function mapMessage(row: MessageRow): Message {
+  return {
+    id: row.id,
+    name: row.name,
+    phone: row.phone,
+    email: row.email ?? undefined,
+    message: row.message,
+    read: row.read,
+    createdAt: row.created_at,
+  };
+}
+
 export async function getMessages(): Promise<Message[]> {
-  const items = await readJson<Message[]>(MESSAGES_FILE, []);
-  return [...items].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("messages")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`Murojaatlarni olishda xatolik: ${error.message}`);
+  return (data as MessageRow[]).map(mapMessage);
 }
 
 export async function addMessage(
   input: Omit<Message, "id" | "createdAt" | "read">,
 ): Promise<Message> {
-  const items = await readJson<Message[]>(MESSAGES_FILE, []);
-  const item: Message = {
-    ...input,
-    id: cryptoId(),
-    createdAt: new Date().toISOString(),
-    read: false,
-  };
-  items.push(item);
-  await writeJson(MESSAGES_FILE, items);
-  return item;
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("messages")
+    .insert({
+      name: input.name,
+      phone: input.phone,
+      email: input.email || null,
+      message: input.message,
+      read: false,
+    })
+    .select("*")
+    .single();
+  if (error) throw new Error(`Murojaatni saqlashda xatolik: ${error.message}`);
+  return mapMessage(data as MessageRow);
 }
 
 export async function markMessageRead(id: string, read: boolean): Promise<void> {
-  const items = await readJson<Message[]>(MESSAGES_FILE, []);
-  const idx = items.findIndex((m) => m.id === id);
-  if (idx !== -1) {
-    items[idx].read = read;
-    await writeJson(MESSAGES_FILE, items);
-  }
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("messages")
+    .update({ read })
+    .eq("id", id);
+  if (error) throw new Error(`Murojaatni belgilashda xatolik: ${error.message}`);
 }
 
 export async function deleteMessage(id: string): Promise<void> {
-  const items = await readJson<Message[]>(MESSAGES_FILE, []);
-  await writeJson(
-    MESSAGES_FILE,
-    items.filter((m) => m.id !== id),
-  );
+  const supabase = getSupabase();
+  const { error } = await supabase.from("messages").delete().eq("id", id);
+  if (error) throw new Error(`Murojaatni o'chirishda xatolik: ${error.message}`);
 }
 
 export async function getUnreadCount(): Promise<number> {
-  const items = await readJson<Message[]>(MESSAGES_FILE, []);
-  return items.filter((m) => !m.read).length;
+  const supabase = getSupabase();
+  const { count, error } = await supabase
+    .from("messages")
+    .select("*", { count: "exact", head: true })
+    .eq("read", false);
+  if (error) throw new Error(`O'qilmaganlar sonida xatolik: ${error.message}`);
+  return count ?? 0;
 }
 
 /* ------------------------------- Dars jadvali ------------------------------- */
@@ -188,38 +230,63 @@ export interface ScheduleDoc {
   type: ScheduleType;
   /** Excel uchun: ustun/qator ko'rinishidagi jadval */
   grid?: string[][];
-  /** PDF/rasm uchun: /uploads/... yo'li */
+  /** PDF/rasm uchun: yuklangan fayl (public) URL */
   file?: string;
   updatedAt: string;
 }
 
+interface ScheduleRow {
+  id: string;
+  title: string;
+  type: ScheduleType;
+  grid: string[][] | null;
+  file: string | null;
+  updated_at: string;
+}
+
+function mapSchedule(row: ScheduleRow): ScheduleDoc {
+  return {
+    id: row.id,
+    title: row.title,
+    type: row.type,
+    grid: row.grid ?? undefined,
+    file: row.file ?? undefined,
+    updatedAt: row.updated_at,
+  };
+}
+
 export async function getSchedules(): Promise<ScheduleDoc[]> {
-  const items = await readJson<ScheduleDoc[]>(SCHEDULES_FILE, []);
-  return [...items].sort(
-    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-  );
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("schedules")
+    .select("*")
+    .order("updated_at", { ascending: false });
+  if (error) throw new Error(`Jadvallarni olishda xatolik: ${error.message}`);
+  return (data as ScheduleRow[]).map(mapSchedule);
 }
 
 export async function addSchedule(
   input: Omit<ScheduleDoc, "id" | "updatedAt">,
 ): Promise<ScheduleDoc> {
-  const items = await readJson<ScheduleDoc[]>(SCHEDULES_FILE, []);
-  const item: ScheduleDoc = {
-    ...input,
-    id: cryptoId(),
-    updatedAt: new Date().toISOString(),
-  };
-  items.push(item);
-  await writeJson(SCHEDULES_FILE, items);
-  return item;
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("schedules")
+    .insert({
+      title: input.title,
+      type: input.type,
+      grid: input.grid ?? null,
+      file: input.file ?? null,
+    })
+    .select("*")
+    .single();
+  if (error) throw new Error(`Jadval qo'shishda xatolik: ${error.message}`);
+  return mapSchedule(data as ScheduleRow);
 }
 
 export async function deleteSchedule(id: string): Promise<void> {
-  const items = await readJson<ScheduleDoc[]>(SCHEDULES_FILE, []);
-  await writeJson(
-    SCHEDULES_FILE,
-    items.filter((s) => s.id !== id),
-  );
+  const supabase = getSupabase();
+  const { error } = await supabase.from("schedules").delete().eq("id", id);
+  if (error) throw new Error(`Jadvalni o'chirishda xatolik: ${error.message}`);
 }
 
 /* ------------------------------- Yordamchilar ------------------------------- */
@@ -257,10 +324,4 @@ function uniqueSlug(title: string, existing: string[]): string {
     i += 1;
   }
   return slug;
-}
-
-function cryptoId(): string {
-  return (
-    Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
-  );
 }

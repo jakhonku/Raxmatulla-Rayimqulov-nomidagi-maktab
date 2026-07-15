@@ -21,13 +21,13 @@ const siteUrl = "https://raimqulovmaktabi.uz";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Raxmatulla Rayimqulov nomidagi umumiy o'rta ta'lim maktabi",
+    default: "Rahmetolla Rayimqulov nomidagi umumiy o'rta ta'lim maktabi",
     template: "%s | R. Rayimqulov nomidagi maktab",
   },
   description:
-    "Raxmatulla Rayimqulov nomidagi umumiy o'rta ta'lim maktabining rasmiy veb-sayti. Bilim, tarbiya va kelajak uchun ishonchli maskan. Yangiliklar, qabul, o'qituvchilar va dars jadvali.",
+    "Rahmetolla Rayimqulov nomidagi umumiy o'rta ta'lim maktabining rasmiy veb-sayti. Bilim, tarbiya va kelajak uchun ishonchli maskan. Yangiliklar, qabul, o'qituvchilar va dars jadvali.",
   keywords: [
-    "Raxmatulla Rayimqulov maktabi",
+    "Rahmetolla Rayimqulov maktabi",
     "raimqulovmaktabi",
     "maktab",
     "umumiy o'rta ta'lim",
@@ -40,14 +40,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "uz_UZ",
     url: siteUrl,
-    siteName: "Raxmatulla Rayimqulov nomidagi maktab",
-    title: "Raxmatulla Rayimqulov nomidagi umumiy o'rta ta'lim maktabi",
+    siteName: "Rahmetolla Rayimqulov nomidagi maktab",
+    title: "Rahmetolla Rayimqulov nomidagi umumiy o'rta ta'lim maktabi",
     description:
       "Bilim, tarbiya va kelajak uchun ishonchli maskan. Maktabimizning rasmiy veb-sayti.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Raxmatulla Rayimqulov nomidagi maktab",
+    title: "Rahmetolla Rayimqulov nomidagi maktab",
     description: "Bilim, tarbiya va kelajak uchun ishonchli maskan.",
   },
   robots: {
