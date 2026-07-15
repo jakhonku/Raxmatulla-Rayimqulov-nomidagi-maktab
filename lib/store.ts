@@ -3,6 +3,20 @@ import { getSupabase } from "@/lib/supabase";
 import type { NewsItem, NewsCategory } from "@/lib/data";
 
 /**
+ * O'qish (public) amallari uchun himoya: Supabase sozlanmagan yoki xato bersa,
+ * butun sayt qulamasligi uchun bo'sh natija qaytaramiz va serverda ogohlantiramiz.
+ * Yozish amallari (admin) esa aniq xato tashlaydi — pastda alohida.
+ */
+async function safeRead<T>(label: string, fn: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    console.error(`[store] ${label} — Supabase xatosi:`, (err as Error).message);
+    return fallback;
+  }
+}
+
+/**
  * Supabase (Postgres) asosidagi ma'lumotlar ombori.
  * (Supabase/Postgres-backed data store.)
  *
@@ -42,24 +56,28 @@ function mapNews(row: NewsRow): AdminNews {
 }
 
 export async function getAllNews(): Promise<AdminNews[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("news")
-    .select("*")
-    .order("date", { ascending: false });
-  if (error) throw new Error(`Yangiliklarni olishda xatolik: ${error.message}`);
-  return (data as NewsRow[]).map(mapNews);
+  return safeRead("getAllNews", async () => {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("news")
+      .select("*")
+      .order("date", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data as NewsRow[]).map(mapNews);
+  }, []);
 }
 
 export async function getNewsBySlug(slug: string): Promise<AdminNews | null> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("news")
-    .select("*")
-    .eq("slug", slug)
-    .maybeSingle();
-  if (error) throw new Error(`Yangilikni olishda xatolik: ${error.message}`);
-  return data ? mapNews(data as NewsRow) : null;
+  return safeRead("getNewsBySlug", async () => {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("news")
+      .select("*")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data ? mapNews(data as NewsRow) : null;
+  }, null);
 }
 
 export interface NewsInput {
@@ -167,13 +185,15 @@ function mapMessage(row: MessageRow): Message {
 }
 
 export async function getMessages(): Promise<Message[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("messages")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(`Murojaatlarni olishda xatolik: ${error.message}`);
-  return (data as MessageRow[]).map(mapMessage);
+  return safeRead("getMessages", async () => {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data as MessageRow[]).map(mapMessage);
+  }, []);
 }
 
 export async function addMessage(
@@ -211,13 +231,15 @@ export async function deleteMessage(id: string): Promise<void> {
 }
 
 export async function getUnreadCount(): Promise<number> {
-  const supabase = getSupabase();
-  const { count, error } = await supabase
-    .from("messages")
-    .select("*", { count: "exact", head: true })
-    .eq("read", false);
-  if (error) throw new Error(`O'qilmaganlar sonida xatolik: ${error.message}`);
-  return count ?? 0;
+  return safeRead("getUnreadCount", async () => {
+    const supabase = getSupabase();
+    const { count, error } = await supabase
+      .from("messages")
+      .select("*", { count: "exact", head: true })
+      .eq("read", false);
+    if (error) throw new Error(error.message);
+    return count ?? 0;
+  }, 0);
 }
 
 /* ------------------------------- Dars jadvali ------------------------------- */
@@ -256,13 +278,15 @@ function mapSchedule(row: ScheduleRow): ScheduleDoc {
 }
 
 export async function getSchedules(): Promise<ScheduleDoc[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("schedules")
-    .select("*")
-    .order("updated_at", { ascending: false });
-  if (error) throw new Error(`Jadvallarni olishda xatolik: ${error.message}`);
-  return (data as ScheduleRow[]).map(mapSchedule);
+  return safeRead("getSchedules", async () => {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("schedules")
+      .select("*")
+      .order("updated_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data as ScheduleRow[]).map(mapSchedule);
+  }, []);
 }
 
 export async function addSchedule(
